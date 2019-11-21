@@ -2,10 +2,8 @@ package work;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
-import scala.Tuple3;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -13,7 +11,10 @@ import java.util.ArrayList;
 /**
  * 1，获取sparkContext上下文,已local模式运行。
  * 2，textFile读取文本获取rdd。
- * 3，将string类型的rdd已‘，’进行split，然后进行pairmap转换成k-v对rdd，接着根据key排序，在进行
+ * 3，将string类型的rdd已‘，’进行split，然后进行pairmap转换成k-v对rdd，接着根据key排序，在进行map操作返回string，collection的rdd，
+ *    最终将结果是将点能到达的点以及路径长度进行组装成一个二元组，例如 ：(N1,[(N2,2), (N3,2)]) ，(N4,[(N0,4), (N1,4), (N5,6)])
+ * 4，循环操作将每个之前的二元组进行flatMapToPair和mapToPair操作，将点到点所有路径情况列出来，循环对比path的长度，取最短一条
+ * 5，将计算的结果首先filter过滤NO到NO的数据，然后通过key（path）排序，然后saveAsTextFile写入rdd到文本。
  */
 public class Test {
     private static final String N0 = "N0";
@@ -21,11 +22,9 @@ public class Test {
     public static void main(String[] args) {
         SparkConf conf = new SparkConf().setAppName("test").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
-        JavaRDD<String> rdd = sc.textFile("/Users/mac/workspace/learningSpark/quickStart/src/main/java/work/input.txt");
-
-
-        JavaPairRDD<String, Tuple3<Integer,String,ArrayList<Tuple2<String, Integer>>>> pairRDD = rdd.map(s -> s.split(","))
-                .mapToPair(row -> new Tuple2<>(row[0], new Tuple2<>(row[1], Integer.parseInt(row[2]))))
+        JavaPairRDD<String, Collection> pairRDD = sc.textFile("E:\\IdeaProjects\\learningSpark\\quickStart\\src\\main\\java\\work\\input.txt")
+                .map(s -> s.split(","))
+                .mapToPair(tuple -> new Tuple2<>(tuple[0], new Tuple2<>(tuple[1], Integer.parseInt(tuple[2]))))
                 .groupByKey()
                 .mapToPair(tuple -> {
                     ArrayList<Tuple2<String, Integer>> list = new ArrayList<>();
@@ -34,31 +33,31 @@ public class Test {
                             list.add(new Tuple2<>(t._1, t._2));
                         }
                     }
-                    if (N0.equals(tuple._1)) {
-                        return new Tuple2<>(tuple._1, new Tuple3<>(0,N0,list));
-                    }else {
-                        return new Tuple2<>(tuple._1,new Tuple3<>(-1,"",list));
+                    Collection c = new Collection();
+                    if (tuple._1.compareTo(N0) == 0) {
+                        c.setDst(0);
+                        c.setPath(N0);
                     }
+                    c.setEdge(list);
+                    return new Tuple2<>(tuple._1, c);
                 });
 
         for (int i = 0; i < pairRDD.count(); i++) {
             pairRDD = pairRDD.flatMapToPair(tuple -> {
                 ArrayList<Tuple2<String, Object>> list = new ArrayList<>();
-                if (tuple._2._1() >= 0) {//tuple._2.getDistance()
-                    for (Tuple2<String, Integer> t : tuple._2._3()) {//tuple._2.getEdges()
-                        list.add(new Tuple2<>(t._1, new Tuple2<>(tuple._2._3() + "-" + t._1, tuple._2._1() + t._2)));
+                if (tuple._2.getDst() >= 0) {
+                    for (Tuple2<String, Integer> t : tuple._2.getEdge()) {
+                        list.add(new Tuple2<>(t._1, new Tuple2<>(tuple._2.getPath() + "-" + t._1, tuple._2.getDst() + t._2)));
                     }
                 }
                 list.add(new Tuple2<>(tuple._1, tuple._2));
                 return list.iterator();
-            }).groupByKey()
-                    .mapToPair(tuple -> {
-
+            }).groupByKey().mapToPair(tuple -> {
+                Collection c = new Collection();
                 ArrayList<Tuple2<String, Integer>> list = new ArrayList<>();
-                Tuple3<Integer,String,ArrayList<Tuple2<String, Integer>>> c =null;
                 for (Object o : tuple._2) {
-                    if (o instanceof Tuple3) {
-                        c = (Tuple3) o;
+                    if (o instanceof Collection) {
+                        c = (Collection) o;
                     } else {
                         Tuple2<String, Integer> t = (Tuple2<String, Integer>) o;
                         list.add(new Tuple2<>(t._1, t._2));
@@ -66,17 +65,16 @@ public class Test {
                 }
                 if (list.size() > 0) {
                     String path = list.get(0)._1;
-                    Integer distance = list.get(0)._2;
+                    Integer dst = list.get(0)._2;
                     for (int k = 1; k < list.size(); k++) {
-                        if (list.get(k)._2 < distance) {
-                            distance = list.get(k)._2;
+                        if (list.get(k)._2 < dst) {
+                            dst = list.get(k)._2;
                             path = list.get(k)._1;
                         }
                     }
-                    if(c !=null)
-                    if (distance < c._1() || c._1() == -1) {
-
-                        return  new Tuple2<>(tuple._1,new Tuple3<>(distance,path,c._3()));
+                    if (dst < c.getDst() || c.getDst() == -1) {
+                        c.setDst(dst);
+                        c.setPath(path);
                     }
                 }
                 return new Tuple2<>(tuple._1, c);
@@ -84,32 +82,32 @@ public class Test {
         }
 
         pairRDD.filter(tuple -> tuple._1.compareTo(N0) == 0 ? false : true)
-                .map(tuple -> new Tuple2<>(tuple._2._1(), new StringBuilder().append(tuple._1).append(",").append(tuple._2._1()).append(",").append(tuple._2._2()).toString()))
+                .map(tuple -> new Tuple2<>(tuple._2.getDst(), new StringBuilder().append(tuple._1).append(",").append(tuple._2.getDst()).append(",").append(tuple._2.getPath()).toString()))
                 .sortBy(tuple -> tuple._1, true, 1)
                 .map(tuple -> tuple._2)
-                .saveAsTextFile("/Users/mac/workspace/learningSpark/quickStart/src/main/java/work/output" + System.currentTimeMillis());
+                .saveAsTextFile("E:\\IdeaProjects\\learningSpark\\quickStart\\src\\main\\java\\work\\output" + System.currentTimeMillis());
     }
 
-    public static class Container implements Serializable {
-        private Integer distance;
+     static class Collection implements Serializable {
+        private Integer dst;
         private String path;
-        private ArrayList<Tuple2<String, Integer>> edges;
+        private ArrayList<Tuple2<String, Integer>> edge;
 
-        public Container() {
-            distance = -1;
+        public Collection() {
+            dst = -1;
             path = "";
-            edges = new ArrayList<>();
+            edge = new ArrayList<>();
         }
 
-        public Integer getDistance() {
-            return distance;
-        }
+         public Integer getDst() {
+             return dst;
+         }
 
-        public void setDistance(Integer distance) {
-            this.distance = distance;
-        }
+         public void setDst(Integer dst) {
+             this.dst = dst;
+         }
 
-        public String getPath() {
+         public String getPath() {
             return path;
         }
 
@@ -117,19 +115,12 @@ public class Test {
             this.path = path;
         }
 
-        public ArrayList<Tuple2<String, Integer>> getEdges() {
-            return edges;
+        public ArrayList<Tuple2<String, Integer>> getEdge() {
+            return edge;
         }
 
-        public void setEdges(ArrayList<Tuple2<String, Integer>> edges) {
-            this.edges = edges;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[").append(distance).append(",").append(path).append(",").append(edges.toString()).append("]");
-            return sb.toString();
+        public void setEdge(ArrayList<Tuple2<String, Integer>> edge) {
+            this.edge = edge;
         }
     }
 
