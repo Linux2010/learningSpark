@@ -51,7 +51,13 @@ object SparkTest {
     cityMean.orderBy(desc("avg(Zhvi)")).show(10)
 
 
+    //3, 求出进10年来年房产指数增长率均值最低的10个城市
+    val growth10DF = null;
 
+
+    //4, 计算房价指数均值峰值落差最大的前10个城市
+
+    //5, 计算最有投资
 
   }
 }
