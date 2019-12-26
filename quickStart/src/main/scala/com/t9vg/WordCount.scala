@@ -9,7 +9,7 @@ object WordCount {
   def main(args:Array[String]):Unit={
     val conf = new SparkConf().setMaster("local").setAppName("WordCount")
     val sc = new SparkContext(conf)
-    val text = sc.textFile("E:\\IdeaProjects\\learningSpark\\quickStart\\src\\main\\scala\\com\\t9vg\\review_yelp_wang_38M_.txt")
+    val text = sc.textFile("C:\\Users\\Administrator\\IdeaProjects\\learningSpark\\quickStart\\src\\main\\scala\\com\\t9vg\\review_yelp_wang_38M_.txt")
     val rdd =text.flatMap(line =>line.split(" ")).map(word =>(word,1))
 
     //以单词分组，然后进行map取每组中tuple ("a",1)，然后取tuple中的第二字段累加
