@@ -1,11 +1,7 @@
 package river
 import java.net._
-/**
-  * @author tianfusheng
-  * @e-mail linuxmorebetter@gmail.com
-  * @date 2019/12/31
-  */
-object ewr {
+
+object ewr_bonus {
 
   var i  = 0
   def main(args: Array[String]): Unit = {
@@ -20,44 +16,6 @@ object ewr {
     println(res)
   }
 
-
-  //select t2.* from located t1 inner join located t2 on t1.River = t2.River where t1.City='Nizhniy Novgorod' and t2.City !='Nizhniy Novgorod'
-  /*  def getCities(city: String,bc:Set[String]): Set[String] = {
-
-      val sql ="select t2.city,t2.river from located t1 inner join located t2 on t1.River = t2.River where t1.City='"+city+"'"
-      i=i+1
-      println("------deepin: "+i)
-      println(sql)
-      val eq = URLEncoder.encode(sql, "UTF-8")
-      val u = new java.net.URL(
-        "http://kr.unige.ch/phpmyadmin/query.php?db=Mondial"+"&sql="+eq)
-      val in = scala.io.Source.fromURL(u, "iso-8859-1")
-      var res = Set[String]()
-      var riverSet = Set[String]()
-      for (line <- in.getLines) {
-        val cols = line.split("\t")
-        res += cols(0)
-        riverSet += cols(1)
-      }
-      in.close()
-      println("res:"+res)
-      println("river on "+city+" is:"+riverSet)
-      println("bc:"+bc)
-      val re =res++bc
-      val nextSet = res--bc
-      println("nextSet:"+nextSet)
-
-      if(nextSet.size!=0){
-        for (c <- nextSet){
-          getCities(c,re)
-        }
-      }
-      re
-    }*/
-
-
-
-  //
   def getCities(city: String): Set[String] ={
     val q = "select river from located where city = '" + city + "'"
     val eq = URLEncoder.encode(q, "UTF-8")
@@ -72,13 +30,13 @@ object ewr {
 
     var res = Set[String]()
     for (r <- river){
-      res = res ++ citiesOnRiver(r)
+       res = res ++ citiesOnRiver(r)
     }
     res
   }
 
   def getAllRivers(river:String,res:Set[String] ): Set[String] ={
-    val sql = "select River from river where Name ='"+river+"'"
+    val sql = "select River,Lake from river where Name ='"+river+"'"
     i+=1
     println("deepin:"+(i)+" , sql : "+sql)
     val eq = URLEncoder.encode(sql, "UTF-8")
@@ -89,6 +47,46 @@ object ewr {
       val cols = line.split("\t")
       if(cols(0)!=null&&cols(0)!=""){
         bc = res  ++ getAllRivers(cols(0),bc)
+      }else if(cols(1)!=null&&cols(1)!=""){
+        //bonus的逻辑
+        //由湖泊索引到河流的算法
+        val lake_sql = "select name from river where Lake ='"+cols(1)+"'"
+        println("lake_sql: "+lake_sql)
+        val lake_eq = URLEncoder.encode(lake_sql, "UTF-8")
+        val lake_u = new java.net.URL("http://kr.unige.ch/phpmyadmin/query.php?db=Mondial"+"&sql="+lake_eq)
+        val lake_in = scala.io.Source.fromURL(lake_u, "iso-8859-1")
+        val lake_res =Set[String]()
+        for(line <- lake_in.getLines){
+          val cols = line.split("\t")
+          bc = bc ++ LakeToRiver(cols(0),lake_res)
+
+        }
+
+
+      }
+    }
+    in.close()
+    bc+=river
+    bc
+  }
+
+
+  //bonus的逻辑
+  //由湖泊索引所有流入河
+  def LakeToRiver(river:String,res:Set[String] ): Set[String] ={
+    val q = "select name  from river where River= '" + river + "'"
+    i+=1
+    println("deepin:"+(i)+" , sql : "+q)
+
+    val eq = URLEncoder.encode(q, "UTF-8")
+    val u = new java.net.URL(
+      "http://kr.unige.ch/phpmyadmin/query.php?db=Mondial"+"&sql="+eq)
+    val in = scala.io.Source.fromURL(u, "iso-8859-1")
+    var bc = res
+    for (line <- in.getLines) {
+      val cols = line.split("\t")
+      if(cols(0)!=null&&cols(0)!=""){
+        bc = res  ++ LakeToRiver(cols(0),bc)
       }
     }
     in.close()
@@ -112,6 +110,5 @@ object ewr {
     in.close()
     res
   }
-
 
 }

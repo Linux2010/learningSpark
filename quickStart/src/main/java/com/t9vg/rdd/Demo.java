@@ -23,9 +23,9 @@ public class Demo {
     SparkConf conf = new SparkConf().setAppName("test").setMaster("local[*]");
     JavaSparkContext sc = new JavaSparkContext(conf);
 
-    JavaRDD<String> rdd1 = sc.parallelize(Arrays.asList("123b", "324b", "3333b", "sdfadf", "5fdasdf w", "123a", "324as", "3333a", "sdfadf", "5fdasdf w", "123a", "324as", "3333a", "sdfadf", "5fdasdf w"));
+    JavaRDD<String> rdd1 = sc.parallelize(Arrays.asList("123b", "324b", "3333b", "sdfadf", "5fdasdf w"));
 
-    JavaRDD<String> rdd2 = sc.parallelize(Arrays.asList("123b", "324b", "3333", "sdfadf", "5fdasdfw", "123a", "324as", "3333a", "sdfadf", "5fdasdf w", "123a", "324as", "3333a", "sdfadf", "5fdasdf w"));
+    JavaRDD<String> rdd2 = sc.parallelize(Arrays.asList("123b", "324b", "3333", "sdfadf", "5fdasdf w"));
 
     JavaPairRDD<Integer, Iterable<String>> pairRDD1 = rdd1.groupBy(new Function<String, Integer>() {
       @Override
@@ -94,17 +94,19 @@ public class Demo {
 
 
 
-    map.saveAsTextFile("/Users/mac/workspace/learningSpark/quickStart/src/main/java/com/t9vg/rdd/output"+System.currentTimeMillis());
+//    map.saveAsTextFile("/Users/mac/workspace/learningSpark/quickStart/src/main/java/com/t9vg/rdd/output"+System.currentTimeMillis());
+//
+//    map.foreachPartition((VoidFunction<Iterator<List<String>>>) listIterator -> {
+//      while (listIterator.hasNext()) {
+//        List<String> next = listIterator.next();
+//        System.out.println(next);
+//      }
+//    });
+//
+//    JavaRDD<String> delRDD = sc.textFile( "/Users/mac/workspace/learningSpark/quickStart/src/main/java/com/t9vg/rdd/output", 2);
+    JavaRDD<String> resrdd = map.flatMap(strings ->strings.iterator());
 
-    map.foreachPartition((VoidFunction<Iterator<List<String>>>) listIterator -> {
-      while (listIterator.hasNext()) {
-        List<String> next = listIterator.next();
-        System.out.println(next);
-      }
-    });
-
-    JavaRDD<String> delRDD = sc.textFile( "/Users/mac/workspace/learningSpark/quickStart/src/main/java/com/t9vg/rdd/output", 2);
-
+    resrdd.foreach(s -> System.out.println(s));
 
 
 

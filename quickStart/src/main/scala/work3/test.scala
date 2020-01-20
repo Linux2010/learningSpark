@@ -11,8 +11,12 @@ import org.apache.spark.sql.functions._
 object test {
 
   def main(args:Array[String]):Unit={
+
     val spark = SparkSession.builder.appName("test").master("local[*]").getOrCreate()
+    val startTime = System.currentTimeMillis()
     val df =spark.read.format("csv").option("header","true").csv("/Users/mac/workspace/learningSpark/quickStart/src/main/scala/work2/Zip_Zhvi_Summary_AllHomes.csv")
+    val dfd =spark.read.format("csv").option("header","true").csv("/Users/mac/workspace/learningSpark/quickStart/src/main/scala/work2/Zip_Zhvi_Summary_AllHomes.csv")
+
     df.printSchema()
     //将df的数据集， 注册为内存表，表名为test
     df.createOrReplaceTempView("test")
@@ -66,6 +70,23 @@ object test {
     growth10DF.printSchema()
     val growth10DF2 = growth10DF.groupBy("City").mean()
     growth10DF2.orderBy(desc("avg(10Year)")).show(10)
+
+    val growth10DF23 = spark.sql("select City,CAST(10Year AS DOUBLE) from test")
+    growth10DF23.show(10)
+    growth10DF23.printSchema()
+    val growth10DF24 = growth10DF23.groupBy("City").mean()
+    growth10DF24.orderBy(desc("avg(10Year)")).show(10)
+
+    //产生笛卡尔积
+
+
+
+    val resrdd= df.rdd.cartesian(dfd.rdd)
+    println(resrdd.take(1))
+
+    val endTime = System.currentTimeMillis()
+    val useTime = (endTime-startTime)/1000
+    println("use time: "+useTime+"s")
 
 
 
