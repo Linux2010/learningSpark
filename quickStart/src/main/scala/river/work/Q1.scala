@@ -8,28 +8,28 @@ package river.work
 object Q1 {
   def main(args: Array[String]): Unit = {
     //1,满足以上需求的 L的充要条件是：假设 L数集中<0的子集数量为R1 ，L数集中>0的子集数量为R2，则充要条件为： |R1-R2|<=1,且0不属于L。
-//    val array = Array(1,1,-2,-2,3,-3,4,-5)
-//    var add = new Array[Int](_)
-//2，编写scala代码
-/*val array = Array(1,1,-2,-2,3,-3,4,-5,12)
-    val arraySorted = array.sorted
-    arraySorted.foreach(println(_))
-    val j =arraySorted.length
-    for(i<-0 until j){
-      if(j%2==0){
-        if((j-i*2)>=2){
-          print(arraySorted(i))
-          print(" , ")
-          print(arraySorted(j-i-1))
-          print(" , ")
-        }
-      }else{
-        print("ji")
-        val end = arraySorted((j-1)/2)//取奇数数组中，最中间一位
+    //    val array = Array(1,1,-2,-2,3,-3,4,-5)
+    //    var add = new Array[Int](_)
+    //2，编写scala代码
+    /*val array = Array(1,1,-2,-2,3,-3,4,-5,12)
+        val arraySorted = array.sorted
+        arraySorted.foreach(println(_))
+        val j =arraySorted.length
+        for(i<-0 until j){
+          if(j%2==0){
+            if((j-i*2)>=2){
+              print(arraySorted(i))
+              print(" , ")
+              print(arraySorted(j-i-1))
+              print(" , ")
+            }
+          }else{
+            print("ji")
+            val end = arraySorted((j-1)/2)//取奇数数组中，最中间一位
 
 
-      }
-    }*/
+          }
+        }*/
 
   }
 
@@ -83,10 +83,18 @@ object Q1 {
     }
     res.foreach(println(_))
   }
-
+  //算法的时间复杂度是： O(n)
   def Q1_2019(): Unit ={
-
-
-
+    val L = Array(-1,-2,6,-6,66,4,1,-5,-7,-9,14)
+    val f =L(0)//f是 判断依据第一个值
+    var left = Array[String]()//左边集合
+    var right = Array[String]()//右边集合
+    for(x<-1 until L.length){
+      if(x<=f) left:+x
+      else right:+x
+    }
+    left:+f //左边集合+f
+    val res =left:+right //左边集合+f+右边集合
+    res
   }
 }

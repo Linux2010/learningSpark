@@ -8,19 +8,38 @@ package river.work
 object Q2 {
 
   def main(args: Array[String]): Unit = {
+    val t = Array(3,1,2,5,4)
+    val u = Array(1)
 
-    Q2_2019
+    //Q2_2019
+    val res = finder(t,u)
+    println(res)
+
   }
 
   def Q2_2018: Unit = {
+    val t = Array(3,1,2,5,4)
+    val u = Array(1,2)
 
+    Q2_2019
+    val res = finder(t,u)
+    println(res)
+    //1. what is the time complexity, as a function of N and M, of the following algorithm
+    //这是一个二分法查找 ，complexity为 O(M*log(N))
+    //2. What does k represent at the end of the algorithm’s execution?
+    //  K为M在N中匹配的数量
+    //3. Now suppose that t is also sorted
+    //• explain how the algorithm could be optimized for this case
+    //  对N进行二分法，判断与M的大小
+    //• what would be its time complexity?
+    //  时间复杂度  O(log(N*M))
   }
 
   def finder(t: Array[Int], u: Array[Int]): Int = {
     val M = u.length
     var k = 0
     for (x <- t) {
-      val p = 0
+      var p = 0
       var r = M - 1
       var s = (p + r) / 2
       while (u(s) != x && p <= r) {
@@ -35,11 +54,11 @@ object Q2 {
 
 
   def Q2_2019: Unit = {
-    //1. IfsomeWords=List("x","bop","bip")andsomeText=List("a","bop", "bip", "x", "bip", "bip", "bop"), what would be the value (map) re- turned by cntr(someWords, someText)?
     val someWords = List("x", "bop", "bip")
     val someText = List("a", "bop", "bip", "x", "x", "bip", "bip", "bop")
     val res = cntr(someWords, someText)
     println(res)
+    //1. IfsomeWords=List("x","bop","bip")andsomeText=List("a","bop", "bip", "x", "bip", "bip", "bop"), what would be the value (map) re- turned by cntr(someWords, someText)?
     //答案 ：Map(x -> 1, bop -> 2, bip -> 3)
 
 
